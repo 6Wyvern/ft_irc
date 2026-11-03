@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 16:34:18 by manualva          #+#    #+#             */
-/*   Updated: 2026/10/29 16:01:44 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/03 15:53:12 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,8 +60,6 @@ public:
 
 	void queueOutput(const std::string &data);
 	void consumeOutput(std::size_t length);
-
-	void checkRegistration(Client &client);
 };
 
 #endif

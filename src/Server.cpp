@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 15:57:49 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/02 15:08:31 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/03 15:51:47 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,6 +153,28 @@ bool Server::handleClientData(int fd)
 	return false;
 }
 
+void Server::removeClient(int fd)
+{
+	std::map<int, Client *>::iterator clientIt = _clients.find(fd);
+	if (clientIt != _clients.end())
+	{
+		delete clientIt->second;
+		_clients.erase(clientIt);
+	}
+
+	for (std::vector<struct pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); ++it)
+	{
+		if (it->fd == fd)
+		{
+			_pollFds.erase(it);
+			break;
+		}
+	}
+
+	close(fd);
+	std::cout << "Client disconnected: " << fd << std::endl;
+}
+
 Client *Server::getClient(int fd)
 {
 	std::map<int, Client *>::iterator it = _clients.find(fd);
@@ -161,6 +183,26 @@ Client *Server::getClient(int fd)
 
 	return it->second;
 }
+const std::string &Server::getPassword() const {return _password;}
+Channel *Server::getChannel(const std::string &name)
+{
+	std::map<std::string, Channel *>::iterator it = _channels.find(name);
+	if (it == _channels.end())
+		return NULL;
+
+	return it->second;
+}
+Channel *Server::getOrCreateChannel(const std::string &name)
+{
+	Channel *channel = getChannel(name);
+	if (channel != NULL)
+		return channel;
+
+	channel = new Channel(name);
+	_channels[name] = channel;
+	return channel;
+}
+const std::map<int, Client *> &Server::getClients() const {return _clients;}
 
 Client *Server::findClientByNickname(const std::string &nickname)
 {
@@ -170,8 +212,6 @@ Client *Server::findClientByNickname(const std::string &nickname)
 
 	return NULL;
 }
-
-const std::string &Server::getPassword() const {return _password;}
 
 void Server::sendToClient(Client &client, const std::string &message)
 {
@@ -195,48 +235,6 @@ void Server::updatePollEvents(int fd)
 			return;
 		}
 	}
-}
-
-void Server::removeClient(int fd)
-{
-	std::map<int, Client *>::iterator clientIt = _clients.find(fd);
-	if (clientIt != _clients.end())
-	{
-		delete clientIt->second;
-		_clients.erase(clientIt);
-	}
-
-	for (std::vector<struct pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); ++it)
-	{
-		if (it->fd == fd)
-		{
-			_pollFds.erase(it);
-			break;
-		}
-	}
-
-	close(fd);
-	std::cout << "Client disconnected: " << fd << std::endl;
-}
-
-Channel *Server::getChannel(const std::string &name)
-{
-	std::map<std::string, Channel *>::iterator it = _channels.find(name);
-	if (it == _channels.end())
-		return NULL;
-
-	return it->second;
-}
-
-Channel *Server::getOrCreateChannel(const std::string &name)
-{
-	Channel *channel = getChannel(name);
-	if (channel != NULL)
-		return channel;
-
-	channel = new Channel(name);
-	_channels[name] = channel;
-	return channel;
 }
 
 void Server::removeChannelIfEmpty(const std::string &name)
@@ -292,8 +290,6 @@ void Server::disconnectClient(int fd, const std::string &reason)
 	removeClientFromChannels(fd, reason);
 	removeClient(fd);
 }
-
-const std::map<int, Client *> &Server::getClients() const {return _clients;}
 
 void Server::run()
 {

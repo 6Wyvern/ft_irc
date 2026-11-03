@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 15:57:47 by manualva          #+#    #+#             */
-/*   Updated: 2026/10/29 17:36:24 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/03 15:47:14 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,18 +58,18 @@ public:
 
 	void run();
 
-	const std::string &getPassword() const;
 	Client *getClient(int fd);
+	const std::string &getPassword() const;
+	Channel *getChannel(const std::string &name);
+	Channel *getOrCreateChannel(const std::string &name);
+	const std::map<int, Client *> &getClients() const;
+
 	Client *findClientByNickname(const std::string &nickname);
 	void sendToClient(Client &client, const std::string &message);
 	void updatePollEvents(int fd);
-	Channel *getChannel(const std::string &name);
-	Channel *getOrCreateChannel(const std::string &name);
 	void removeChannelIfEmpty(const std::string &name);
 	void removeClientFromChannels(int fd, const std::string &reason);
 	void disconnectClient(int fd, const std::string &reason);
-
-	const std::map<int, Client *> &getClients() const;
 };
 
 #endif
