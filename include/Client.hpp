@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 16:34:18 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/03 15:53:12 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/13 17:12:26 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ private:
 	bool        _registered;
 	std::string _realname;
 	bool        _hasUserCommand;
+	bool		_disconnectRequested;
 
 	Client(const Client &other);
 	Client &operator=(const Client &other);
@@ -60,6 +61,9 @@ public:
 
 	void queueOutput(const std::string &data);
 	void consumeOutput(std::size_t length);
+	
+	void requestDisconnect();
+	bool shouldDisconnect() const;
 };
 
 #endif

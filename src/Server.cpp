@@ -6,14 +6,19 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 15:57:49 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/03 15:51:47 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/13 17:38:57 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/Server.hpp"
 #include <signal.h>
 
-Server::Server(int port, const std::string &password): _listenFd(-1), _port(port), _password(password), _commandHandler(*this){setupSocket();}
+Server::Server(int port, const std::string &password): _listenFd(-1), _port(port), _password(password), _commandHandler(*this)
+{
+	_signalPipe[0] = -1;
+	_signalPipe[1] = -1;
+	setupSocket();
+}
 
 Server::~Server()
 {
@@ -31,9 +36,20 @@ Server::~Server()
 	_pollFds.clear();
 }
 
+static void handleSigint(int){}
+
 void Server::setupSocket()
 {
 	signal(SIGPIPE, SIG_IGN);
+
+	struct sigaction sa;
+	std::memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = handleSigint;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+
+	if (sigaction(SIGINT, &sa, NULL) < 0)
+	throw std::runtime_error("sigaction() failed");
 
 	_listenFd = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listenFd < 0)
@@ -148,6 +164,12 @@ bool Server::handleClientData(int fd)
 
 		std::cout << "Command: " << message.getCommand() << std::endl;
 		_commandHandler.handle(*client, message);
+
+		if (client->shouldDisconnect())
+		{
+			removeClient(fd);
+			return true;
+		}
 	}
 
 	return false;
@@ -299,7 +321,7 @@ void Server::run()
 		if (ready < 0)
 		{
 			if (errno == EINTR)
-				continue;
+				break;
 			throw std::runtime_error("poll() failed");
 		}
 

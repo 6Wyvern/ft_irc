@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:46 by manualva          #+#    #+#             */
-/*   Updated: 2026/10/29 18:06:03 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/13 17:11:30 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -137,7 +137,8 @@ void CommandHandler::handleQuit(Client &client, const Message &message)
 	const std::vector<std::string> &params = message.getParams();
 	std::string reason = params.empty() ? client.getNickname() : params[0];
 
-	_server.disconnectClient(client.getFd(), reason);
+	_server.removeClientFromChannels(client.getFd(), reason);
+	client.requestDisconnect();
 }
 
 void CommandHandler::handleInvite(Client &client, const Message &message)

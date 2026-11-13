@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 15:57:47 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/03 15:47:14 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/13 17:35:44 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ class Server
 private:
 	int _listenFd;
 	int _port;
+	int _signalPipe[2];
 	std::string _password;
 	std::vector<struct pollfd> _pollFds;
 	std::map<int, Client *> _clients;

@@ -1,0 +1,3 @@
+seguir protocolo RFC1459
+normalizar los nombres de los canales
+probarlo con HexChat, testeando con valgrind los leaks de memoria y las señales

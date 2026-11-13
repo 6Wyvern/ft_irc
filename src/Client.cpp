@@ -6,13 +6,13 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 16:34:15 by manualva          #+#    #+#             */
-/*   Updated: 2026/10/28 16:04:19 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/13 17:18:43 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/Client.hpp"
 
-Client::Client(int fd) : _fd(fd), _hasPassed(false), _registered(false), _hasUserCommand(false){}
+Client::Client(int fd) : _fd(fd), _hasPassed(false), _registered(false), _hasUserCommand(false), _disconnectRequested(false){}
 
 Client::~Client(){}
 
@@ -62,3 +62,7 @@ void Client::consumeOutput(std::size_t length)
     else
         _outputBuffer.erase(0, length);
 }
+
+void Client::requestDisconnect(){_disconnectRequested = true;}
+
+bool Client::shouldDisconnect() const{return _disconnectRequested;}

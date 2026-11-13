@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:54 by manualva          #+#    #+#             */
-/*   Updated: 2026/10/29 18:06:06 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/13 16:29:34 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ void CommandHandler::handleNick(Client &client, const Message &message)
 
 	const std::string &nickname = params[0];
 
-	if (nickname.empty() || (!std::isalpha(static_cast<unsigned char>(nickname[0])) && std::string("[]\\`_^{|}").find(nickname[0]) == std::string::npos))
+	if (nickname.empty() || nickname.size() > 9 || (!std::isalpha(static_cast<unsigned char>(nickname[0])) && std::string("[]\\`_^{|}").find(nickname[0]) == std::string::npos))
 		return sendNumeric(client, 432, nickname + " :Erroneous nickname");
 
 	for (std::size_t i = 1; i < nickname.size(); ++i)
@@ -47,7 +47,8 @@ void CommandHandler::handleNick(Client &client, const Message &message)
 			return sendNumeric(client, 432, nickname + " :Erroneous nickname");
 	}
 
-	for (std::map<int, Client *>::const_iterator it = _server.getClients().begin(); it != _server.getClients().end(); ++it)
+	for (std::map<int, Client *>::const_iterator it = _server.getClients().begin();
+		it != _server.getClients().end(); ++it)
 	{
 		if (it->second == &client)
 			continue;
@@ -62,6 +63,21 @@ void CommandHandler::handleNick(Client &client, const Message &message)
 
 		if (!existing.empty() && existing == requested)
 			return sendNumeric(client, 433, nickname + " :Nickname is already in use");
+	}
+
+	if (client.isRegistered())
+	{
+		std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost NICK :" + nickname + "\r\n";
+
+		const std::map<int, Client *> &clients = _server.getClients();
+		for (std::map<int, Client *>::const_iterator it = clients.begin(); it != clients.end(); ++it)
+		{
+			if (it->second == &client)
+			{
+				_server.sendToClient(client, reply);
+				continue;
+			}
+		}
 	}
 
 	client.setNickname(nickname);
