@@ -6,13 +6,24 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:46 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/13 17:11:30 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/16 18:21:43 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CommandHandler.hpp"
 #include "Server.hpp"
 
+/*
+JOIN command
+Joins a channel and prints a list of members after joining
+
+If user isn't registered, sends error message 451
+If no channel is specified, sends error message 461
+If channel name has less than 2 characters or it doesn't start with # or &, sends error message 473
+If a channel is invite-only (+i) and you aren't invited, sends error message 473
+If a channel has a paswword key (+k) and password is incorrect, sends error message 475
+If a channel has a user limit (+l) and joinig would exceed the limit, sends error message 471
+*/
 void CommandHandler::handleJoin(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
@@ -89,6 +100,15 @@ void CommandHandler::handleJoin(Client &client, const Message &message)
 	}
 }
 
+/*
+PART command
+Leaves a channel and leaves a message
+
+If user isn't registered, sends error message 451
+If no parameters are specified, sends error message 461
+If channel doesn't exist, sends error message 403
+If user isn't in the channel, sends error message 442
+*/
 void CommandHandler::handlePart(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
@@ -132,6 +152,10 @@ void CommandHandler::handlePart(Client &client, const Message &message)
 	}
 }
 
+/*
+QUIT command
+Disconnects from the server
+*/
 void CommandHandler::handleQuit(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
@@ -141,6 +165,18 @@ void CommandHandler::handleQuit(Client &client, const Message &message)
 	client.requestDisconnect();
 }
 
+/*
+KICK command
+Invites a user to the channel and allows joining if invite-only, notifies target (+i)
+
+If user isn't registered, sends error message 451
+If no parameters are specified, sends error message 461
+If target's nick doesn't exist, sends error message 401
+If channel doesn't exist, sends error message 403
+If user isn't in the channel, sends error message 442
+If target is already on the channel, sends error message 443
+If channel is invite-only (+i) and user isn't an operator (+o), sends error message 482
+*/
 void CommandHandler::handleInvite(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
@@ -170,6 +206,18 @@ void CommandHandler::handleInvite(Client &client, const Message &message)
 	_server.sendToClient(*target, ":" + client.getNickname() + "!" + client.getUsername() + "@localhost INVITE " + target->getNickname() + " " + params[1] + "\r\n");
 }
 
+/*
+KICK command
+Removes a user from the channel with a message
+
+If user isn't registered, sends error message 451
+If no parameters are specified, sends errormessage 461
+If channel doesn't exist, sends error message 403
+If user isn't in the channel, sends error message 442
+If user isn't an operator (+o), sends error message 482
+If target's nick doesn't exist, sends error message 401
+If target isn't on the channel, sends error message 441
+*/
 void CommandHandler::handleKick(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();

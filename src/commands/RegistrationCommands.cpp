@@ -6,13 +6,21 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:54 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/13 16:29:34 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/16 18:22:19 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CommandHandler.hpp"
 #include "Server.hpp"
 
+/*
+PASS command
+Inputs password
+
+If client is already registered, sends error message 462
+If no password is provided, sends error message 461
+If password is incorrect, sends error message 464
+*/
 void CommandHandler::handlePass(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
@@ -28,6 +36,14 @@ void CommandHandler::handlePass(Client &client, const Message &message)
 	checkRegistration(client);
 }
 
+/*
+NICK command
+Handles nickname
+
+If no nickname is provided, sends error message 431
+If nickname has more than 9 characters or non-alphanumeric characters are used, sends error message 432
+If nickname is already in use, error sends message 433
+*/
 void CommandHandler::handleNick(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
@@ -84,6 +100,13 @@ void CommandHandler::handleNick(Client &client, const Message &message)
 	checkRegistration(client);
 }
 
+/*
+USER command
+Registers user
+
+If already registered, sends error message 462
+If message is empty or doesn't have enough parameters, sends error message 461
+*/
 void CommandHandler::handleUser(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();

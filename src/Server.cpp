@@ -6,20 +6,22 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/26 15:57:49 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/13 17:38:57 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/16 17:28:20 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/Server.hpp"
 #include <signal.h>
 
-Server::Server(int port, const std::string &password): _listenFd(-1), _port(port), _password(password), _commandHandler(*this)
-{
-	_signalPipe[0] = -1;
-	_signalPipe[1] = -1;
-	setupSocket();
-}
+/*Initializes the server*/
+Server::Server(int port, const std::string &password): _listenFd(-1), _port(port), _password(password), _commandHandler(*this){setupSocket();}
 
+/*
+Destroys the server
+
+Closes every file descriptor stored in _pollFds and destroys every dynamically allocated client and channel
+Finally, clears the containers
+*/
 Server::~Server()
 {
 	for (std::vector<struct pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); ++it)
@@ -36,8 +38,29 @@ Server::~Server()
 	_pollFds.clear();
 }
 
+//Does nothing, just there to interrupt poll()
 static void handleSigint(int){}
 
+/*
+Creates the listening socket and prepares it to accept connections
+
+Ignores sigpipe to prevent it from terminating the server
+Configures custom signal handler for ctrl-C
+Creates an IPv4 TCP socket
+Enables adress reuse to quickly reactivate it after being destroyed
+Makes the socket non-blocking so functions like accept() don't wait forever
+	(returns immediately if no connection is waiting)
+Configures the server address
+	AF_INET: IPv4.
+	INADDR_ANY: Accept connections through available interfaces
+	_port: Sets up the port given (I like 1234)
+	htons() and htonl(): Convert values into network byte order
+Binds the socket with the IP address and port
+Marks the socket as listening
+	SOMAXCONN specifies the maximum connection backlog supported
+Registers the listening socket with your polling system.
+	POLLIN tells poll() when the socket is ready to acceptconnections.
+*/
 void Server::setupSocket()
 {
 	signal(SIGPIPE, SIG_IGN);
@@ -100,6 +123,16 @@ void Server::setupSocket()
 	std::cout << "Server listening on port " << _port << std::endl;
 }
 
+/*
+Accepts a new client connection and connects it to the server
+
+Retrieves connection from the listening socket
+	returns if no connection is waiting
+fcntl() sets the newly socket to non-blocking mode
+Creates a new pollfd() for that client, descriptor is added to _pollFds
+	_pollFds tracks sockets that poll() should monitor.
+Creates and stores a new client in _clients
+*/
 void Server::acceptClient()
 {
 	struct sockaddr_in clientAddress;
@@ -131,6 +164,21 @@ void Server::acceptClient()
 	std::cout << "Client connected: " << clientFd << std::endl;
 }
 
+/*
+Receives data from a client, extracts messages, parses them and sends them to the command handler
+
+Receives up to 4096 bytes from a client
+	if bytes are zero, it means client disconnected
+	if bytes are less than zero, it means operation failed or couldn't complete
+Retrieves corresponding client object
+Stores received data into the input buffer
+	done in case messages are received sepparately
+Retrieves complete IRC messages from the input buffer
+Parses the message into command, parameters and trailing parameter (if any)
+Executes the command
+Checks if the client requested disconnection, for commands like QUIT
+	if it does, removes client after processing the command
+*/
 bool Server::handleClientData(int fd)
 {
 	char buffer[4096];
@@ -175,6 +223,13 @@ bool Server::handleClientData(int fd)
 	return false;
 }
 
+/*
+Completely removes a client from client management
+
+Finds and removes Client object
+Removes file descriptor from _pollFds
+Closes socket
+*/
 void Server::removeClient(int fd)
 {
 	std::map<int, Client *>::iterator clientIt = _clients.find(fd);
@@ -197,6 +252,7 @@ void Server::removeClient(int fd)
 	std::cout << "Client disconnected: " << fd << std::endl;
 }
 
+/*Retrieves a client's pointer by its socket description or NULL if not found*/
 Client *Server::getClient(int fd)
 {
 	std::map<int, Client *>::iterator it = _clients.find(fd);
@@ -205,7 +261,11 @@ Client *Server::getClient(int fd)
 
 	return it->second;
 }
+
+/*Returns password*/
 const std::string &Server::getPassword() const {return _password;}
+
+/*Returns a pointer to the channel or NULL if not found*/
 Channel *Server::getChannel(const std::string &name)
 {
 	std::map<std::string, Channel *>::iterator it = _channels.find(name);
@@ -214,6 +274,8 @@ Channel *Server::getChannel(const std::string &name)
 
 	return it->second;
 }
+
+/*Checks if a channel exists, returns it if it does, creates it if not*/
 Channel *Server::getOrCreateChannel(const std::string &name)
 {
 	Channel *channel = getChannel(name);
@@ -224,8 +286,11 @@ Channel *Server::getOrCreateChannel(const std::string &name)
 	_channels[name] = channel;
 	return channel;
 }
+
+/*Returns a constant referebce to the client map*/
 const std::map<int, Client *> &Server::getClients() const {return _clients;}
 
+/*Searches clients to find one with requested nickname and returns it, or NULL if not found*/
 Client *Server::findClientByNickname(const std::string &nickname)
 {
 	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
@@ -235,12 +300,23 @@ Client *Server::findClientByNickname(const std::string &nickname)
 	return NULL;
 }
 
+/*
+Queues outgoing message for a client
+	because sockets are non-blocking, unsent data is preserved until socket is ready to receive
+*/
 void Server::sendToClient(Client &client, const std::string &message)
 {
 	client.queueOutput(message);
 	updatePollEvents(client.getFd());
 }
 
+/*
+Configures which event should poll() monitor for a particular client
+	POLLIN: Socket is ready to receive data
+	POLLOUT: Socket is ready to send data
+POLLIN is enabled by default
+POLLOUT is enabled only when there is outgoing data waiting to be sent
+*/
 void Server::updatePollEvents(int fd)
 {
 	Client *client = getClient(fd);
@@ -259,6 +335,7 @@ void Server::updatePollEvents(int fd)
 	}
 }
 
+/*Deletes a channel if there are no members left*/
 void Server::removeChannelIfEmpty(const std::string &name)
 {
 	Channel *channel = getChannel(name);
@@ -269,6 +346,15 @@ void Server::removeChannelIfEmpty(const std::string &name)
 	_channels.erase(name);
 }
 
+/*
+Removes a disconnected client from every channel it was connected to
+
+Retrieves client information
+Constructs a quit message
+Notifies other members
+Removes client from the channels
+Deletes channels that get empty
+*/
 void Server::removeClientFromChannels(int fd, const std::string &reason)
 {
 	std::map<std::string, Channel *>::iterator it = _channels.begin();
@@ -304,6 +390,7 @@ void Server::removeClientFromChannels(int fd, const std::string &reason)
 	}
 }
 
+/*Completely disconnects client, removes it from channels and deletes it*/
 void Server::disconnectClient(int fd, const std::string &reason)
 {
 	if (_clients.find(fd) == _clients.end())
@@ -313,6 +400,22 @@ void Server::disconnectClient(int fd, const std::string &reason)
 	removeClient(fd);
 }
 
+/*
+Main function
+Monitors all sockets and reacts when something happens
+
+poll() monitors every descriptor stored in _pollFds.
+	waits indefinitely until until an event occurs or a signal interrupts it
+If poll() is interrupted by SIGINT, exits loop
+	unexpected errors cause an exception
+Iterates over ready descriptors
+If a descriptor has no events, moves to the next one
+If a ready descriptor is the listening socket, accepts the connection and registers the new client
+If a client socket reports an error or invalid descriptor, the server disconnects it
+Checks if a client still exists to prevent accessing to nonexistent objects
+If a connection has been terminated, server removes the client
+If the socket is ready to receive data, retrieves output buffer, trnasmits data, and updates polling events
+*/
 void Server::run()
 {
 	while (true)

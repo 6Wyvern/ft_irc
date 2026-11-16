@@ -6,13 +6,24 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:51 by manualva          #+#    #+#             */
-/*   Updated: 2026/10/29 18:06:05 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/16 18:21:56 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CommandHandler.hpp"
 #include "Server.hpp"
 
+/*
+PRIVMSG command
+Sends message to user or channel
+
+If user isn't registered, sends error message 451
+If user or channel isn't specified, sends error message 411
+If message is empty, sends error message 412
+If channel doesn't exist, sends error message 403
+If channel exists but you're not on the channel, sends error message 404
+If user doesn't exist, sends error message 401
+*/
 void CommandHandler::handlePrivmsg(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();

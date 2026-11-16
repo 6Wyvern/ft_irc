@@ -6,13 +6,24 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:49 by manualva          #+#    #+#             */
-/*   Updated: 2026/10/29 18:05:59 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/16 18:35:47 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CommandHandler.hpp"
 #include "Server.hpp"
 
+/*
+TOPIC command
+Changes channel's topic
+
+If user isn't registered, sends error message 451
+If no parameters are specified, sends error message 461
+If channel doesn't exist, sends error message 403
+If user isn't in the channel, sends error message 442
+If no topic is specified, sends error message 331
+If channel is topic restricted (+t) and user isn't operator (+o), sends error message 482
+*/
 void CommandHandler::handleTopic(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
@@ -52,6 +63,28 @@ void CommandHandler::handleTopic(Client &client, const Message &message)
 			_server.sendToClient(*it->second, reply);
 }
 
+/*
+MODE command
+Changes channel's mode
+	+i makes it invite-only (only users invited by operators can join)
+	+t makes it topic-restricted (only operators can change the topic)
+	+k sets a password (must be inputed when joining)
+	+l sets a user limit (no more than the specified amount can be on the channel)
+	+o grants specified user operator privileges for that channel
+'+' symbol enables mode, '-' symbol disables it
+
+If user isn't registered, sends error message 451
+If no parameters are specified sends error message 461
+	also sends error message 461 if no password is provided for +k, no user is specified for +o, or no limit is specified for +l
+If channel doesn't exist, sends error message 403
+If user isn't in the channel, sends error message 442
+If user isn't an operator, sends error message 482
+If channel already has password and, +k sends error message 467
+If target's nick doesn't exist, +o sends error message 401
+If target isn't on the channel, +o sends error message 441
+If parameter mode is invalid, sends error message 696
+If an incorrect character is provided, sends error message 472
+*/
 void CommandHandler::handleMode(Client &client, const Message &message)
 {
 	const std::vector<std::string> &params = message.getParams();
