@@ -1,0 +1,729 @@
+---IA GOOGLE---
+en este proyecto debe implementarse perfectamente el protocolo IRC no?
+
+No, no es necesario implementar todo el protocolo IRC completo. Solo debes cubrir exactamente las funciones que pide el subject y asegurar la compatibilidad básica con el cliente de
+referencia que elijas.
+Implementar el protocolo entero (RFC 1459 / 2812) llevaría meses y tiene decenas de comandos que nadie evalúa en 42.
+
+Lo que SÍ exige la evaluación
+
+• Comandos obligatorios. Tu servidor solo necesita entender PASS, NICK, USER, PING, PONG, QUIT, PRIVMSG, NOTICE, JOIN, PART, KICK, INVITE, TOPIC y MODE (únicamente con los flags i, t, k, o, l).
+• Handshake del cliente oficial. El cliente de referencia (como HexChat, Irssi o WeeChat) envía comandos extra al conectarse (como CAP LS o WHO). No tienes que programar CAP, pero tu
+servidor no debe crashear ni bloquearse al recibir comandos desconocidos (basta con ignorarlos o responder con el error numérico estándar 421 ERR_UNKNOWNCOMMAND).
+• Respuestas numéricas clave. El cliente oficial espera códigos exactos para avanzar en la conexión y mostrar la interfaz correctamente, como 001 (bienvenida tras autenticar), 353 y 366
+(lista de usuarios al entrar a un canal con JOIN), y los códigos de error básicos (433 nick en uso, 464 contraseña incorrecta, 475 clave de canal errónea, etc.).
+• Formato estricto de mensajes. Aunque no hagas todos los comandos, los que sí implementes deben respetar al pie de la letra la estructura :prefijo COMANDO params :trailing\r\n para que
+el cliente gráfico los interprete bien.
+
+Lo que NO hace falta programar
+
+• Comunicación entre servidores. No hay que enlazar varios servidores IRC (SERVER, SQUIT, etc.).
+• Comandos avanzados de red o usuario. Puedes omitir comandos como WHOIS, WHOWAS, LIST, NAMES (fuera del JOIN), AWAY, OPER (operador global del servidor) o WALLOPS.
+• Modos de usuario o modos extra de canal. No se evalúan modos de usuario (como +i invisible) ni modos de canal complejos (como +b ban o +m moderado).
+¿Qué cliente de referencia vas a usar para las pruebas (HexChat, Irssi, WeeChat, netcat)? Puedo pasarte la lista exacta de códigos numéricos RFC que ese cliente necesita para conectarse
+sin quedarse colgado.
+AI responses may include mistakes. Learn more
+
+https://www.rfc-editor.org/info/rfc1459/#section-1.1
+
+El texto enlazado corresponde a la Sección 1.1 (Servers) de la especificación RFC 1459, pero el subject de ft_irc te exime explícitamente de implementar esa arquitectura.
+
+Qué dice la Sección 1.1 del RFC 1459
+
+• Red distribuida de servidores. El RFC explica que los servidores IRC actúan como nodos centrales formando una red en árbol (spanning tree) donde varios servidores se conectan entre sí.
+• Enrutamiento entre nodos. En una red IRC real, si un cliente en el Servidor A habla con otro en el Servidor B, los servidores deben sincronizar estados y reenviar mensajes por el árbol.
+
+Por qué NO debes implementarlo en ft_irc
+
+• Prohibición del subject. El enunciado de 42 indica explícitamente que la comunicación entre servidores (server-to-server) está fuera del alcance del proyecto.
+• Un solo proceso. Tu programa debe ser un único servidor aislado al que se conectan múltiples clientes locales.
+• Secciones que debes ignorar. Puedes saltar por completo todo lo relacionado con enlaces entre servidores en el documento:
+	• Sección 1.1. Topología de red de servidores (spanning tree).
+	• Sección 4.1.4 y 4.1.7. Comandos SERVER y SQUIT.
+	• Sección 8.6 y 8.8. Establecimiento y cierre de conexiones entre servidores.
+
+Qué secciones del RFC 1459 SÍ te sirven para ft_irc
+
+Para tu proyecto, céntrate únicamente en las partes de cliente-servidor:
+• Sección 1.2 y 1.3. Conceptos básicos de clientes, operadores de canal (@) y canales (# o &).
+• Sección 2.3. Formato exacto de los mensajes (:prefijo COMANDO params :trailing\r\n) y el límite de 512 bytes por línea.
+• Sección 4.1, 4.2, 4.4 y 4.6. Sintaxis y parámetros de los comandos obligatorios (PASS, NICK, USER, QUIT, JOIN, PART, MODE, TOPIC, INVITE, KICK, PRIVMSG, NOTICE, PING, PONG).
+• Sección 6. Lista de respuestas numéricas (401 a 502 para errores, y 300 a 395 para respuestas de comandos).
+Si quieres, podemos revisar juntos la Sección 2.3 (formato BNF de mensajes) para diseñar el parser en C++98, o ver la lista exacta de códigos numéricos de la Sección 6 que necesitas implementar.
+¿Por cuál prefieres empezar?
+AI responses may include mistakes. Learn more
+• 
+RFC 1459: Internet Relay Chat Protocol | RFC Editor
+1.1 Servers The server forms the backbone of IRC, providing a point to which clients may connect to to talk to each other, and a p...
+
+Y alguna parte mas?
+
+Sí, puedes ignorar la gran mayoría del documento, ya que más del 70% del RFC 1459 trata sobre redes multi-servidor, comandos administrativos antiguos y funciones opcionales que no entran en ft_irc.
+Aquí tienes el mapa exacto de qué otras secciones debes descartar y cuáles aprovechar del documento que pasaste:
+
+Secciones que debes IGNORAR por completo
+
+• Sección 1.2.1 y 4.1.5 (IRC Operators / OPER). No hay operadores globales del servidor en ft_irc, solo operadores de canal (chanops de la Sección 1.3.1).
+• Sección 3.2.3 y 3.3 (Máscaras de host/servidor y broadcasts globales). Nadie puede enviar mensajes masivos a todo el servidor ($* o #*).
+• Sección 4.2.3.2 (User modes). No se implementan modos de usuario (como +i invisible o +w wallops), solo modos de canal (+i, +t, +k, +o, +l).
+• Sección 4.2.5 y 4.2.6 (NAMES y LIST como comandos directos). No hace falta soportar LIST, y NAMES solo lo usarás internamente al enviar la lista de miembros cuando alguien hace JOIN
+(códigos 353 y 366).
+• Sección 4.3 (Server queries: VERSION, STATS, LINKS, TIME, CONNECT, TRACE, ADMIN, INFO). Ninguna consulta de estado del servidor es necesaria.
+• Sección 4.5 (User-based queries: WHO, WHOIS, WHOWAS). Aunque tu cliente gráfico mande WHO al entrar a un canal, puedes ignorarlo sin problema.
+• Sección 4.6.1 y 4.6.4 (KILL y ERROR). KILL es exclusivo de operadores globales y redes multi-servidor.
+• Sección 5 entera (Optional messages). Comandos como AWAY, REHASH, RESTART, SUMMON, USERS, WALLOPS, USERHOST e ISON son opcionales en el RFC y no se evalúan.
+• Secciones 7, 8.11, 8.12 y 9. No necesitas autenticación IDENT (RFC 1413), resoluciones DNS inversas, archivos de configuración .conf ni algoritmos anti-flood.
+
+Secciones ocultas que SÍ son oro puro para tu código
+
+Dentro de la Sección 8 (Current implementations) hay tres detalles técnicos clave que suelen provocar fallos en las evaluaciones si no se leen:
+• Sección 8.2 (Command Parsing). Explica por qué cada cliente debe tener su propio input buffer y avisa de un bug clásico: si un cliente manda varios comandos seguidos en un mismo paquete y
+el primero es QUIT, debes dejar de procesar el resto del buffer porque el objeto cliente ya fue eliminado.
+• Sección 8.3 (Message delivery / Send Queue). Recomienda usar una cola de salida (send buffer) por cliente en lugar de hacer send() directo cada vez, evitando bloqueos si el socket destino
+no está listo para escribir.
+• Sección 8.7 (Terminating server-client connections). Especifica que si un cliente cierra su terminal o pierde la conexión de golpe (EOF en recv() == 0) sin enviar QUIT, tu servidor debe
+simular un QUIT en su nombre para avisar al resto de usuarios en sus canales.
+Si te parece útil, podemos ver cómo estructurar en C++98 el manejo de buffers de entrada/salida (Secciones 8.2 y 8.3) junto con poll() para evitar fugas de memoria o bloqueos al desconectarse
+un cliente. ¿Lo vemos?
+
+
+--IA VISUAL STUDIO--
+Voy a revisar el Makefile, la implementación completa del servidor y los comandos, y después compilar/probar sin modificar archivos.
+
+
+## Veredicto
+
+**No cumple estrictamente al 100% con el subject**, aunque la estructura principal es correcta y cubre buena parte de los requisitos.
+
+### Lo que sí cumple
+
+| Requisito | Estado | Evidencia |
+|---|---:|---|
+| Ejecutable llamado `ircserv` | ✅ | `NAME = ircserv` en `Makefile` |
+| Targets `all`, `clean`, `fclean`, `re` | ✅ | `Makefile` |
+| Uso de C++98 | ✅ | `-std=c++98` en `Makefile` |
+| Argumentos `<port> <password>` | ✅ | `main.cpp` |
+| Uso de TCP/IP IPv4 | ✅ | `socket(AF_INET, SOCK_STREAM, 0)` en `Server.cpp` |
+| Servidor multi-cliente | ✅ | Utiliza `poll()` y una colección de clientes |
+| Una única llamada a `poll()` | ✅ | Solo aparece en `Server.cpp:298` |
+| Descriptores no bloqueantes | ✅ en Linux | Socket servidor y clientes configurados con `O_NONBLOCK` |
+| No utiliza `fork()` | ✅ | No hay ninguna llamada a `fork` |
+| Reconstrucción de comandos fragmentados | ✅ | Buffer acumulado en `Client.cpp` |
+| PASS, NICK, USER | ✅ | `RegistrationCommands.cpp` |
+| JOIN, PART, PRIVMSG, QUIT | ✅ | `MemberCommands.cpp`, `MessageCommands.cpp` |
+| KICK, INVITE, TOPIC, MODE | ✅ parcialmente | `ChannelCommands.cpp` |
+
+### Incumplimientos o problemas importantes
+
+#### 1. Uso de `fcntl()` incompatible con la restricción específica de macOS
+
+El subject indica que, en macOS, solo se permite:
+
+```cpp
+fcntl(fd, F_SETFL, O_NONBLOCK);
+```
+
+El proyecto utiliza:
+
+```cpp
+int flags = fcntl(fd, F_GETFL, 0);
+fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+```
+
+en `Server.cpp:50-51` y `Server.cpp:100-101`.
+
+En Linux normalmente funciona, pero **formalmente no respeta la regla de macOS**.
+
+#### 2. Posible use-after-free después de `QUIT`
+
+`handleQuit()` elimina el cliente inmediatamente:
+
+```cpp
+_server.disconnectClient(client.getFd(), reason);
+```
+
+Pero después de volver a `handleClientData()`, el bucle puede intentar seguir usando el puntero `client`, que ya fue destruido, si el cliente envió varios comandos en el mismo paquete.
+
+Esto puede producir un fallo al enviar algo como:
+
+```text
+QUIT :bye
+NICK another
+```
+
+#### 3. Errores de `recv()` y `send()` no se gestionan correctamente
+
+En `Server.cpp:121`, cualquier error de `recv()` simplemente devuelve `false`, sin distinguir entre:
+
+- conexión cerrada,
+- error temporal,
+- error real.
+
+Además, en `Server.cpp:361`, si `send()` devuelve `-1`, el error se ignora. Esto puede provocar reintentos indefinidos sobre una conexión rota.
+
+No se basa en `errno` después de `recv()` o `send()`, lo cual es correcto respecto al subject, pero la gestión de errores sigue siendo incompleta.
+
+#### 4. Compatibilidad limitada con clientes IRC reales
+
+El servidor responde `421 Unknown command` a cualquier comando no implementado. No aparecen comandos habituales como:
+
+- `PING`
+- `CAP`
+- `WHO`
+- `LIST`
+- `NOTICE`
+
+Aunque no todos son obligatorios, algunos clientes IRC reales pueden necesitarlos para conectarse o funcionar correctamente. Por tanto, **no puede garantizarse que cualquier cliente de
+referencia se conecte sin errores**.
+
+#### 5. No pude verificar la compilación
+
+La ejecución de `make` fue bloqueada por permisos del entorno. Por inspección, el Makefile parece correcto y coherente con C++98, pero la compilación real no quedó verificada.
+
+## Conclusión
+
+El proyecto implementa correctamente la arquitectura básica del ejercicio y probablemente pasa muchas pruebas funcionales simples con `nc`, incluyendo recepción fragmentada, canales, mensajes y modos.
+
+Sin embargo, **no lo consideraría plenamente conforme al subject** debido principalmente a:
+
+1. El uso de `fcntl()` no permitido estrictamente en macOS.
+2. El posible acceso a memoria liberada tras `QUIT`.
+3. La gestión incompleta de errores de `recv()`/`send()`.
+4. La compatibilidad no garantizada con clientes IRC reales.
+
+
+						¿Y sigue las reglas del protocolo IRC?
+## Veredicto
+
+**Cumple parcialmente el protocolo IRC**, concretamente el subconjunto mínimo del subject, pero **no es plenamente compatible con el protocolo IRC estándar ni con muchos clientes reales**.
+
+### Funcionalidades implementadas
+
+- `PASS`, `NICK`, `USER`
+- Registro básico y respuesta `001`
+- `JOIN`, `PART`, `QUIT`
+- `PRIVMSG`
+- `KICK`, `INVITE`, `TOPIC`, `MODE`
+- Canales con modos `i`, `t`, `k`, `o`, `l`
+- Mensajes con prefijo IRC y terminación `\r\n`
+- Reconstrucción de comandos fragmentados
+
+Estas funcionalidades están implementadas principalmente en `CommandHandler.cpp`, `RegistrationCommands.cpp`, `MemberCommands.cpp` y `ChannelCommands.cpp`.
+
+### Incompatibilidades importantes
+
+| Área | Estado | Problema |
+|---|---:|---|
+| Límite de mensajes | ❌ | No se limita la línea IRC a 512 bytes |
+| `PING`/`PONG` | ❌ | No están implementados; muchos clientes los necesitan |
+| `CAP` | ❌ | Clientes modernos suelen enviarlo al conectar |
+| `NOTICE` | ❌ | Falta una orden IRC habitual |
+| `NAMES`, `WHO`, `LIST` | ❌ | No están implementados como comandos independientes |
+| `MODE` de usuario | ❌ | Solo se gestiona parcialmente el modo de canal |
+| Cambio de nick | ⚠️ | No se notifica a los demás clientes |
+| Registro | ⚠️ | El orden de `PASS`, `NICK` y `USER` no se valida estrictamente |
+| `JOIN` múltiple | ⚠️ | No procesa correctamente claves distintas para varios canales |
+| `JOIN` repetido | ⚠️ | Un cliente puede recibir respuestas duplicadas al unirse otra vez |
+| `INVITE` | ⚠️ | Un usuario normal puede invitar si el canal no es `+i`, aunque el subject lo presenta como comando de operador |
+| `MODE` | ⚠️ | Las respuestas no siempre siguen la forma estándar agregada de IRC |
+| Protocolo de entrada | ⚠️ | Acepta líneas terminadas solo con `\n`, aunque IRC exige normalmente `\r\n` |
+| Errores de conexión | ⚠️ | El tratamiento de errores de `send()`/`recv()` no es completamente conforme |
+
+### Problema especialmente relevante para clientes reales
+
+Un cliente IRC suele comenzar con comandos como:
+
+```text
+CAP LS
+PASS password
+NICK usuario
+USER usuario 0 * :Nombre
+```
+
+Este servidor responderá `421 Unknown command` a `CAP`, porque los comandos desconocidos se gestionan así en `CommandHandler.cpp`.
+
+También puede enviar periódicamente:
+
+```text
+PING :servidor
+```
+
+y espera:
+
+```text
+PONG :servidor
+```
+
+Al no estar implementados `PING` y `PONG`, algunos clientes terminarán desconectándose.
+
+## Conclusión
+
+- **Respecto al subconjunto mínimo exigido por el subject:** bastante cercano, aunque con algunas desviaciones.
+- **Respecto al protocolo IRC estándar:** no completamente.
+- **Respecto a clientes IRC reales:** no se puede garantizar compatibilidad; como mínimo faltan `PING/PONG` y probablemente `CAP`.
+
+Por tanto, la descripción correcta sería: **servidor IRC educativo con implementación parcial del protocolo IRC**, no una implementación plenamente conforme al estándar.
+
+
+--COPILOT IA GITHUB--
+Voy a revisar la estructura, documentación y flujo principal del repositorio para explicarte la arquitectura y el recorrido de una conexión IRC de extremo a extremo.
+
+La revisión muestra una discrepancia importante: el `Makefile` intenta compilar una carpeta `src/commands/` que no aparece en el árbol clonado. Voy a comprobar el estado exacto de la versión y
+separar lo que está implementado de lo que quedó incompleto.
+
+Esta versión de `ft_irc` es una **base inicial de un servidor IRC en C++98**, con una arquitectura razonable, pero actualmente está **incompleta y no parece compilable tal como está publicada**.
+
+## 1. Entrada del programa
+
+El flujo comienza en `main.cpp`:
+
+```bash
+./ircserv <port> <password>
+```
+
+El programa valida:
+
+- Que existan exactamente dos argumentos.
+- Que el puerto sea numérico.
+- Que esté entre `1` y `65535`.
+- Que la contraseña no esté vacía.
+
+Después crea:
+
+```cpp
+Server server(port, argv[2]);
+server.run();
+```
+
+Si ocurre una excepción, se muestra el error y el programa termina.
+
+---
+
+## 2. Arquitectura general
+
+La implementación está dividida principalmente en cuatro clases:
+
+| Clase | Responsabilidad |
+|---|---|
+| `Server` | Sockets, clientes, canales y bucle principal |
+| `Client` | Estado y buffers de cada conexión |
+| `Message` | Parseo de comandos IRC |
+| `Channel` | Miembros, operadores, invitaciones y modos |
+| `CommandHandler` | Ejecución de comandos IRC |
+
+La relación principal es:
+
+```text
+Server
+ ├── Client*
+ ├── Channel*
+ └── CommandHandler
+       └── Server&
+```
+
+`CommandHandler` recibe una referencia al servidor para poder buscar clientes, canales y enviar respuestas.
+
+---
+
+## 3. Servidor y sockets
+
+`Server::setupSocket()` configura el socket TCP:
+
+1. Ignora `SIGPIPE` para evitar que `send()` termine el proceso.
+2. Instala un handler para `SIGINT`.
+3. Crea un socket IPv4/TCP.
+4. Activa `SO_REUSEADDR`.
+5. Configura el socket como no bloqueante.
+6. Hace `bind()` sobre `INADDR_ANY`.
+7. Ejecuta `listen()`.
+8. Añade el socket de escucha a `_pollFds`.
+
+El servidor utiliza:
+
+```cpp
+poll(&_pollFds[0], _pollFds.size(), -1);
+```
+
+Esto permite atender múltiples clientes sin crear un hilo por conexión.
+
+---
+
+## 4. Bucle principal
+
+`Server::run()` espera eventos de `poll()`:
+
+- `POLLIN` en el socket principal: llega un nuevo cliente.
+- `POLLIN` en un cliente: hay datos disponibles.
+- `POLLOUT`: hay respuestas pendientes por enviar.
+- `POLLHUP`, `POLLERR` o `POLLNVAL`: la conexión debe cerrarse.
+
+El flujo normal es:
+
+```text
+poll()
+  ├── nueva conexión → acceptClient()
+  ├── datos recibidos → handleClientData()
+  ├── datos pendientes → send()
+  └── error/desconexión → disconnectClient()
+```
+
+Cuando se pulsa `Ctrl+C`, `poll()` se interrumpe por `SIGINT`, el bucle termina y el destructor libera los recursos.
+
+---
+
+## 5. Gestión de clientes
+
+Cada cliente se almacena en:
+
+```cpp
+std::map<int, Client *> _clients;
+```
+
+La clave es el descriptor del socket.
+
+Un `Client` contiene:
+
+- `_fd`: descriptor del socket.
+- `_nickname`: nickname IRC.
+- `_username`: username.
+- `_realname`: nombre real.
+- `_inputBuffer`: datos recibidos parcialmente.
+- `_outputBuffer`: datos todavía no enviados.
+- `_hasPassed`: si validó `PASS`.
+- `_hasUserCommand`: si envió `USER`.
+- `_registered`: si terminó el registro.
+- `_disconnectRequested`: si pidió desconexión.
+
+### Recepción de datos
+
+`recv()` puede devolver:
+
+```text
+PASS secret\r\nNICK usuario\r\n
+```
+
+o solamente una parte:
+
+```text
+PASS sec
+```
+
+Por eso los datos se acumulan en `_inputBuffer`.
+
+`Client::getNextLine()` busca `\n`, extrae una línea completa y elimina `\r` si existe. Esto permite procesar correctamente mensajes IRC terminados en:
+
+```text
+\r\n
+```
+
+También soporta varios comandos recibidos en un solo `recv()`.
+
+---
+
+## 6. Buffer de salida
+
+Las respuestas no se envían directamente desde cada comando. Se agregan mediante:
+
+```cpp
+client.queueOutput(message);
+```
+
+Después `Server::updatePollEvents()` activa `POLLOUT`.
+
+Cuando el socket está listo:
+
+```cpp
+send(fd, output.c_str(), output.size(), 0);
+```
+
+La cantidad enviada se elimina con:
+
+```cpp
+client.consumeOutput(sent);
+```
+
+Esto es importante porque `send()` puede enviar solamente una parte del mensaje.
+
+---
+
+## 7. Parseo de mensajes IRC
+
+La clase `Message` separa una línea en:
+
+- Prefijo opcional.
+- Comando.
+- Parámetros.
+
+Por ejemplo:
+
+```text
+:nick!user@localhost PRIVMSG #general :Hola mundo
+```
+
+Se transforma aproximadamente en:
+
+```text
+prefix  = nick!user@localhost
+command = PRIVMSG
+params  = ["#general", "Hola mundo"]
+```
+
+El parser también normaliza el comando a mayúsculas:
+
+```text
+privmsg → PRIVMSG
+join    → JOIN
+nick    → NICK
+```
+
+Soporta el parámetro final IRC introducido por `:`:
+
+```text
+PRIVMSG #canal :mensaje con espacios
+```
+
+### Limitaciones del parser
+
+Esta versión todavía tiene varias limitaciones:
+
+- Solo trata el espacio `' '` como separador.
+- No limita el número de parámetros según RFC.
+- No valida estrictamente nombres, longitudes o caracteres IRC.
+- Un prefijo sin comando se considera inválido.
+- No genera respuestas numéricas para líneas mal formadas.
+
+---
+
+## 8. Registro de un cliente
+
+`CommandHandler::checkRegistration()` considera registrado a un cliente cuando se cumplen las tres condiciones:
+
+```cpp
+hasPassed()
+getNickname() no vacío
+hasUserCommand()
+```
+
+Entonces envía:
+
+```text
+:localhost 001 nickname :Welcome to the IRC Network nickname
+```
+
+El orden de `PASS`, `NICK` y `USER` no importa mientras todos hayan sido enviados.
+
+El estado conceptual es:
+
+```text
+Cliente conectado
+      ↓
+PASS correcto
+      ↓
+NICK definido
+      ↓
+USER recibido
+      ↓
+REGISTERED
+      ↓
+JOIN, PRIVMSG, PART, etc.
+```
+
+Sin embargo, la lógica concreta de `handlePass`, `handleNick` y `handleUser` está declarada, pero no aparece implementada en los archivos visibles.
+
+---
+
+## 9. Distribución de comandos
+
+`CommandHandler::handle()` hace un despacho directo:
+
+```cpp
+if (command == "PASS")
+    handlePass(...);
+else if (command == "NICK")
+    handleNick(...);
+else if (command == "USER")
+    handleUser(...);
+...
+else
+    sendNumeric(client, 421, "... :Unknown command");
+```
+
+Los comandos contemplados son:
+
+- `PASS`
+- `NICK`
+- `USER`
+- `JOIN`
+- `PRIVMSG`
+- `PART`
+- `QUIT`
+- `KICK`
+- `INVITE`
+- `TOPIC`
+- `MODE`
+
+Los errores se responden con numéricos IRC. Por ejemplo:
+
+```text
+:localhost 421 nickname COMMAND :Unknown command
+```
+
+Los numéricos se formatean siempre con tres dígitos usando `setw(3)`.
+
+---
+
+## 10. Canales
+
+Los canales se almacenan en:
+
+```cpp
+std::map<std::string, Channel *> _channels;
+```
+
+Cada canal contiene:
+
+- Nombre.
+- Topic.
+- Contraseña.
+- Miembros.
+- Operadores.
+- Invitaciones.
+- Modo invite-only.
+- Modo topic restringido.
+- Límite de usuarios.
+- Clave del canal.
+
+Los miembros se identifican mediante su descriptor de socket:
+
+```cpp
+std::set<int> _members;
+```
+
+Esto permite comprobar:
+
+```cpp
+channel->hasMember(fd);
+channel->isOperator(fd);
+channel->isInvited(fd);
+```
+
+Al eliminar un miembro también se eliminan sus privilegios de operador y sus invitaciones:
+
+```cpp
+void Channel::removeMember(int fd)
+{
+    _members.erase(fd);
+    _operators.erase(fd);
+    _invited.erase(fd);
+}
+```
+
+Cuando un canal queda vacío, `Server::removeChannelIfEmpty()` lo elimina de memoria.
+
+---
+
+## 11. Desconexión
+
+Cuando un cliente ejecuta `QUIT`, se desconecta o produce un error:
+
+1. Se notifica `QUIT` a los miembros de sus canales.
+2. Se elimina de cada canal.
+3. Se eliminan los canales vacíos.
+4. Se destruye el objeto `Client`.
+5. Se elimina su descriptor de `_pollFds`.
+6. Se cierra el socket.
+
+El mensaje enviado a los demás usuarios tiene esta forma:
+
+```text
+:nick!user@localhost QUIT :reason\r\n
+```
+
+La gestión de memoria utiliza punteros crudos, pero el destructor de `Server` intenta liberar todos los `Client*` y `Channel*`.
+
+---
+
+## 12. Problema importante de esta versión
+
+El `Makefile` referencia estos archivos:
+
+```make
+src/commands/ChannelCommands.cpp
+src/commands/MemberCommands.cpp
+src/commands/RegistrationCommands.cpp
+src/commands/MessageCommands.cpp
+```
+
+Pero esos archivos no aparecen en la estructura visible del repositorio. Además, métodos como:
+
+```cpp
+handlePass()
+handleNick()
+handleUser()
+handleJoin()
+handlePrivmsg()
+handlePart()
+handleQuit()
+handleKick()
+handleInvite()
+handleTopic()
+handleMode()
+```
+
+están declarados, pero no se encuentran implementados en `CommandHandler.cpp`.
+
+Por tanto, esta versión parece ser una **estructura parcialmente migrada o incompleta**. El diseño ya separa los comandos por categorías, pero los archivos correspondientes no fueron incluidos o no
+están en la rama publicada.
+
+Consecuencia probable:
+
+```text
+make
+```
+
+fallaría primero porque no encuentra los archivos de `src/commands/`, y aun eliminando esas referencias aparecerían errores de linker por métodos sin definición.
+
+---
+
+## 13. Otros puntos pendientes
+
+El archivo `notas.txt` indica tareas todavía abiertas:
+
+```text
+seguir protocolo RFC1459
+normalizar los nombres de los canales
+probarlo con HexChat, testeando con valgrind los leaks de memoria y las señales
+```
+
+Esto coincide con el estado del código:
+
+- No hay normalización de nombres de canales.
+- No se observa validación completa conforme a RFC 1459.
+- Faltan implementaciones de comandos.
+- No hay tests automatizados.
+- `README.md` está vacío.
+- `_signalPipe` está declarado, pero no se utiliza.
+- La gestión de errores de `recv()` podría distinguir mejor `EAGAIN` y `EWOULDBLOCK`.
+- Solo se acepta una conexión por evento de `poll()`, en vez de aceptar hasta vaciar la cola.
+- La estructura usa raw pointers en lugar de una gestión de propiedad más segura.
+
+## Resumen
+
+La versión tiene una buena base conceptual:
+
+```text
+socket no bloqueante
+        ↓
+poll()
+        ↓
+Client con buffers
+        ↓
+Message parser
+        ↓
+CommandHandler
+        ↓
+Channel / Server state
+```
+
+Pero no es todavía una implementación funcional completa de `ft_irc`. La parte de red, buffers, parser, estados y estructura de canales está iniciada; la lógica IRC real y los archivos de comandos
+parecen faltar en esta versión publicada.
