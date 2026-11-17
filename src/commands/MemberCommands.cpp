@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:46 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/16 18:37:15 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/17 15:27:49 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,7 +166,7 @@ void CommandHandler::handleQuit(Client &client, const Message &message)
 }
 
 /*
-KICK command
+INVITE command
 Invites a user to the channel and allows joining if invite-only, notifies target (+i)
 
 If user isn't registered, sends error message 451
