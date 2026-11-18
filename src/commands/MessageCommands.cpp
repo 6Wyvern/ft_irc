@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:51 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/16 18:37:22 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/18 16:21:11 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ void CommandHandler::handlePrivmsg(Client &client, const Message &message)
 				Client *recipient = _server.findClientByNickname(target);
 
 				if (recipient == NULL)
-					sendNumeric(client, 401, target + " :No such nick");
+					sendNumeric(client, 401, target + " :No such nick/channel");
 				else
 					_server.sendToClient(*recipient, prefix);
 			}

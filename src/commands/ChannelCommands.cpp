@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:49 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/16 18:36:55 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/18 16:20:50 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -205,7 +205,7 @@ void CommandHandler::handleMode(Client &client, const Message &message)
 
 			if (target == NULL)
 			{
-				sendNumeric(client, 401, modeArg + " :No such nick");
+				sendNumeric(client, 401, modeArg + " :No such nick/channel");
 				continue;
 			}
 			if (!channel->hasMember(target->getFd()))

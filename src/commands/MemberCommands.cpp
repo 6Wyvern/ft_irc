@@ -6,7 +6,7 @@
 /*   By: manualva <manualva@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/29 17:47:46 by manualva          #+#    #+#             */
-/*   Updated: 2026/11/17 15:27:49 by manualva         ###   ########.fr       */
+/*   Updated: 2026/11/18 16:42:27 by manualva         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,13 +41,14 @@ void CommandHandler::handleJoin(Client &client, const Message &message)
 		std::string::size_type end = names.find(',', start);
 		std::string name = names.substr(start, end == std::string::npos ? std::string::npos : end - start);
 
-		if (name.size() < 2 || (name[0] != '#' && name[0] != '&'))
+		if (name.empty() || name.size() < 2 || (name[0] != '#' && name[0] != '&'))
 			sendNumeric(client, 476, name + " :Bad Channel Mask");
 		else
 		{
 			Channel *channel = _server.getChannel(name);
 
-			if (channel != NULL && channel->isInviteOnly() && !channel->isInvited(client.getFd()))
+			if (channel != NULL && channel->hasMember(client.getFd())){}
+			else if (channel != NULL && channel->isInviteOnly() && !channel->isInvited(client.getFd()))
 				sendNumeric(client, 473, name + " :Cannot join channel (+i)");
 			else if (channel != NULL && channel->hasKey() && (params.size() < 2 || params[1] != channel->getKey()))
 				sendNumeric(client, 475, name + " :Cannot join channel (+k)");
@@ -188,7 +189,7 @@ void CommandHandler::handleInvite(Client &client, const Message &message)
 
 	Client *target = _server.findClientByNickname(params[0]);
 	if (target == NULL)
-		return sendNumeric(client, 401, params[0] + " :No such nick");
+		return sendNumeric(client, 401, params[0] + " :No such nick/channel");
 
 	Channel *channel = _server.getChannel(params[1]);
 	if (channel == NULL)
@@ -237,7 +238,7 @@ void CommandHandler::handleKick(Client &client, const Message &message)
 
 	Client *target = _server.findClientByNickname(params[1]);
 	if (target == NULL)
-		return sendNumeric(client, 401, params[1] + " :No such nick");
+		return sendNumeric(client, 401, params[1] + " :No such nick/channel");
 	if (!channel->hasMember(target->getFd()))
 		return sendNumeric(client, 441, params[1] + " " + params[0] + " :They aren't on that channel");
 
