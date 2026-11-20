@@ -19,7 +19,7 @@ Joins a channel and prints a list of members after joining
 
 If user isn't registered, sends error message 451
 If no channel is specified, sends error message 461
-If channel name has less than 2 characters or it doesn't start with # or &, sends error message 473
+If channel name has less than 2 characters or it doesn't start with # or &, sends error message 476
 If a channel is invite-only (+i) and you aren't invited, sends error message 473
 If a channel has a paswword key (+k) and password is incorrect, sends error message 475
 If a channel has a user limit (+l) and joinig would exceed the limit, sends error message 471
